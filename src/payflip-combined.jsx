@@ -1217,7 +1217,9 @@ const MobileBiometricSetup = ({onComplete}) => (
   </div>
 );
 
-const MobileApplePaySetup = ({onComplete,onSkip}) => (
+const MobileApplePaySetup = ({onComplete,onSkip}) => {
+  const [showSheet,setShowSheet]=useState(false);
+  return (
   <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#FAFAFE",position:"relative",overflow:"hidden"}}>
     <div style={{position:"absolute",top:-60,right:-40,width:200,height:200,borderRadius:"50%",background:"radial-gradient(circle, rgba(108,92,231,0.1) 0%, transparent 70%)",filter:"blur(45px)"}}/>
     <MobileStatusBar/>
@@ -1239,7 +1241,7 @@ const MobileApplePaySetup = ({onComplete,onSkip}) => (
       </div>
     </div>
     <div style={{padding:"0 24px 40px",position:"relative",zIndex:1,display:"flex",flexDirection:"column",gap:10}}>
-      <button onClick={onComplete} style={{width:"100%",background:"#000",border:"1px solid #555",borderRadius:14,padding:"14px 20px",cursor:"pointer",fontFamily:ff,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"none"}}>
+      <button onClick={()=>setShowSheet(true)} style={{width:"100%",background:"#000",border:"1px solid #555",borderRadius:14,padding:"14px 20px",cursor:"pointer",fontFamily:ff,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"none"}}>
         {/* Apple Wallet icon */}
         <svg width="28" height="22" viewBox="0 0 35 27" fill="none">
           <rect x="3" y="0" width="29" height="22" rx="4" fill="#ddd"/>
@@ -1254,12 +1256,14 @@ const MobileApplePaySetup = ({onComplete,onSkip}) => (
           <span style={{color:"#fff",fontSize:17,fontWeight:600,letterSpacing:"-0.2px"}}>Apple Wallet</span>
         </div>
       </button>
-      <button onClick={onSkip} style={{width:"100%",background:"none",border:"none",padding:"12px",cursor:"pointer",fontFamily:ff,fontSize:14,fontWeight:500,color:C.txtM}}>
+      <button onClick={()=>onSkip(false)} style={{width:"100%",background:"none",border:"none",padding:"12px",cursor:"pointer",fontFamily:ff,fontSize:14,fontWeight:500,color:C.txtM}}>
         I'll do this later
       </button>
     </div>
+    {showSheet&&<AppleWalletSheet onDone={()=>onComplete(true)} onCancel={()=>setShowSheet(false)}/>}
   </div>
-);
+  );
+};
 
 const MobileCelebration = ({onContinue}) => {
   const [confettiDone,setConfettiDone]=useState(false);
@@ -1534,10 +1538,15 @@ const MobileCardScreen = ({onBackToWeb,cardState,setCardState}) => {
 
 const MobileAppContent = ({onBackToWeb,onCardSetupComplete,cardState,setCardState}) => {
   const [screen,setScreen]=useState("login");
-  const handleCelebrationContinue = () => { if(onCardSetupComplete) onCardSetupComplete(); setScreen("card"); };
+  const [walletAddedDuringSetup,setWalletAddedDuringSetup]=useState(false);
+  const handleCelebrationContinue = () => {
+    if(onCardSetupComplete) onCardSetupComplete();
+    if(walletAddedDuringSetup) setCardState(s=>({...s,walletAdded:true}));
+    setScreen("card");
+  };
   if(screen==="login") return <MobileLoginScreen onLogin={()=>setScreen("biometrics")}/>;
   if(screen==="biometrics") return <MobileBiometricSetup onComplete={()=>setScreen("applePay")}/>;
-  if(screen==="applePay") return <MobileApplePaySetup onComplete={()=>setScreen("celebration")} onSkip={()=>setScreen("celebration")}/>;
+  if(screen==="applePay") return <MobileApplePaySetup onComplete={(added)=>{if(added)setWalletAddedDuringSetup(true);setScreen("celebration")}} onSkip={()=>setScreen("celebration")}/>;
   if(screen==="celebration") return <MobileCelebration onContinue={handleCelebrationContinue}/>;
   return <MobileCardScreen onBackToWeb={onBackToWeb} cardState={cardState} setCardState={setCardState}/>;
 };
